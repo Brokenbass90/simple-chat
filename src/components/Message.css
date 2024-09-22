@@ -1,0 +1,10 @@
+.message {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+  }
+  
+.message__avatar {
+  width: 30px;
+}

@@ -23,7 +23,7 @@ const JWT_SECRET = process.env.JWT_SECRET || '435472';
 const mongoDB = process.env.MONGODB_URI || 'mongodb://127.0.0.1/chat';
 
 // Connect to MongoDB
-mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(mongoDB)
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
@@ -152,8 +152,12 @@ app.get('/api/user', authenticateToken, async (req, res) => {
 });
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, '..', 'src', 'build')));
+app.use(express.static(path.join(__dirname, '..', 'build')));
 
+// The "catchall" handler: for any request that doesn't match above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
+});
 // The "catchall" handler: for any request that doesn't match above, send back React's index.html file.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'src', 'build', 'index.html'));

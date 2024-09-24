@@ -1,5 +1,7 @@
+// src/components/Chat.js
+
 import React, { useState, useEffect } from 'react';
-import socket from '../socket';
+import { initiateSocket, getSocket } from '../socket'; // Обновлённый импорт
 import Message from './Message';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
@@ -18,7 +20,7 @@ function Chat() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.get('http://localhost:5000/api/user', {
+      axios.get('/api/user', { // Относительный путь
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -26,7 +28,9 @@ function Chat() {
       .then((res) => {
         setUser(res.data);
 
-        socket.auth = { token };
+        initiateSocket(token); // Инициализация сокета с токеном
+
+        const socket = getSocket();
         socket.connect();
 
         socket.emit('requestChatHistory');
@@ -40,37 +44,46 @@ function Chat() {
     }
 
     // Обработчики событий сокета
-    socket.on('chatHistory', (messages) => {
-      setMessages(messages);
-    });
+    let socket;
+    try {
+      socket = getSocket();
+      socket.on('chatHistory', (messages) => {
+        setMessages(messages);
+      });
 
-    socket.on('chatMessage', (msg) => {
-      setMessages((prevMessages) => [...prevMessages, msg]);
-    });
+      socket.on('chatMessage', (msg) => {
+        setMessages((prevMessages) => [...prevMessages, msg]);
+      });
 
-    socket.on('deleteMessage', (messageId) => {
-      setMessages((prevMessages) => prevMessages.filter(msg => msg._id !== messageId));
-    });
+      socket.on('deleteMessage', (messageId) => {
+        setMessages((prevMessages) => prevMessages.filter(msg => msg._id !== messageId));
+      });
 
-    socket.on('errorMessage', (errorMsg) => {
-      alert(errorMsg);
-    });
+      socket.on('errorMessage', (errorMsg) => {
+        alert(errorMsg);
+      });
 
-    socket.on('connect_error', (err) => {
-      if (err.message === 'Authentication error') {
-        alert('Ошибка аутентификации. Пожалуйста, войдите заново.');
-        handleLogout();
-      } else {
-        console.error('Ошибка подключения:', err);
-      }
-    });
+      socket.on('connect_error', (err) => {
+        if (err.message === 'Authentication error') {
+          alert('Ошибка аутентификации. Пожалуйста, войдите заново.');
+          handleLogout();
+        } else {
+          console.error('Ошибка подключения:', err);
+        }
+      });
+    } catch (error) {
+      console.error(error.message);
+    }
 
     return () => {
-      socket.off('chatHistory');
-      socket.off('chatMessage');
-      socket.off('deleteMessage');
-      socket.off('errorMessage');
-      socket.off('connect_error');
+      if (socket) {
+        socket.off('chatHistory');
+        socket.off('chatMessage');
+        socket.off('deleteMessage');
+        socket.off('errorMessage');
+        socket.off('connect_error');
+        socket.disconnect();
+      }
     };
   }, []);
 
@@ -78,17 +91,18 @@ function Chat() {
     setUser({ username, avatar });
     setShowLogin(false);
   
-    socket.auth = { token: localStorage.getItem('token') };
+    const token = localStorage.getItem('token');
+    initiateSocket(token);
+    const socket = getSocket();
     socket.connect();
-  
     socket.emit('requestChatHistory');
   };
-  
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     setUser(null);
     setShowLogin(true);
+    const socket = getSocket();
     socket.disconnect();
   };
 
@@ -98,13 +112,14 @@ function Chat() {
       const msg = {
         text: message,
       };
+      const socket = getSocket();
       socket.emit('chatMessage', msg);
       setMessage('');
     }
   };
-  
 
   const deleteMessage = (messageId) => {
+    const socket = getSocket();
     socket.emit('deleteMessage', messageId);
   };
 
@@ -130,10 +145,10 @@ function Chat() {
         <>
           <div className="chat__header">
             {user.avatar && (
-              <img src={`http://localhost:5000${user.avatar}`} alt="Avatar" className="chat__avatar" />
+              <img src={user.avatar} alt="Avatar" className="chat__avatar" /> 
             )}
             <span>{user.username}</span>
-            <button onClick={() => setShowProfile(true)}>Профиль</button> {/* Кнопка для открытия профиля */}
+            <button onClick={() => setShowProfile(true)}>Профиль</button> 
             <button onClick={handleLogout}>Выйти</button>
           </div>
           <div className="chat__messages">

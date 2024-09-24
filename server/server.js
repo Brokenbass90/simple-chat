@@ -1,5 +1,7 @@
 // server/server.js
 
+require('dotenv').config(); // Загрузка переменных окружения
+
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
@@ -16,11 +18,11 @@ const Message = require('./models/Message');
 const User = require('./models/User');
 
 // Constants
-const PORT = 5000;
-const JWT_SECRET = '435472'; // Замените на ваш собственный секретный ключ
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || '435472';
+const mongoDB = process.env.MONGODB_URI || 'mongodb://127.0.0.1/chat';
 
 // Connect to MongoDB
-const mongoDB = 'mongodb://127.0.0.1/chat';
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
@@ -63,7 +65,6 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
-
 
 // Routes
 
@@ -150,13 +151,21 @@ app.get('/api/user', authenticateToken, async (req, res) => {
   }
 });
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '..', 'src', 'build')));
+
+// The "catchall" handler: for any request that doesn't match above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'src', 'build', 'index.html'));
+});
+
 // Create HTTP server
 const server = http.createServer(app);
 
 // Initialize Socket.io
 const io = socketIO(server, {
   cors: {
-    origin: '*', // Разрешаем все источники (для целей разработки)
+    origin: '*', // Разрешаем все источники (для целей разработки). В продакшене можно ограничить.
   },
 });
 

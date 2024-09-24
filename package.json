@@ -7,6 +7,7 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "bcrypt": "^5.1.1",
+    "dotenv": "^16.0.3",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "react": "^18.2.0",
@@ -16,10 +17,11 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "node server/server.js", // Запуск только сервера
     "server": "npm run dev --prefix server",
     "client": "react-scripts start",
     "build": "react-scripts build",
+    "heroku-postbuild": "npm run build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -44,5 +46,8 @@
   "devDependencies": {
     "axios": "^0.21.4",
     "concurrently": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=14.x"
   }
 }

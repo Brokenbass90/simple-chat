@@ -1,11 +1,9 @@
-// src/components/Chat.js
-
 import React, { useState, useEffect } from 'react';
-import { initiateSocket, getSocket } from '../socket'; // Обновлённый импорт
+import { initiateSocket, getSocket } from '../socket'; // Корректный импорт
 import Message from './Message';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
-import Profile from './Profile/Profile'; // Импортируем компонент Profile
+import Profile from './Profile/Profile';
 import './Chat.css';
 import axios from 'axios';
 

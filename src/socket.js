@@ -1,24 +1,24 @@
-// src/socket.js
-
 import { io } from 'socket.io-client';
 
 let socket;
 
 export const initiateSocket = (token) => {
-  socket = io('/', { // '/' означает текущий домен
-    auth: {
-      token: token,
-    },
-    autoConnect: false, // Позволяет контролировать подключение из компонента
-  });
+  if (!socket) { // Проверяем, что сокет еще не инициализирован
+    socket = io('/', {
+      auth: {
+        token: token,
+      },
+      autoConnect: false,
+    });
 
-  socket.on('connect', () => {
-    console.log('Подключен к сокету');
-  });
+    socket.on('connect', () => {
+      console.log('Подключен к сокету');
+    });
 
-  socket.on('disconnect', () => {
-    console.log('Отключился от сокета');
-  });
+    socket.on('disconnect', () => {
+      console.log('Отключился от сокета');
+    });
+  }
 };
 
 export const getSocket = () => {

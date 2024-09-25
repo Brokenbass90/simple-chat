@@ -2,6 +2,7 @@
   "name": "realtime-chat",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:5000",
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -17,10 +18,9 @@
   },
   "scripts": {
     "start": "node server/server.js",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "npm run dev --prefix server",
-    "client": "react-scripts start",
-    "build": "react-scripts build",
+    "dev": "concurrently \"npm run server\" \"npm run build -- --watch\"",
+    "server": "node server/server.js",
+    "build": "react-scripts build --output-path server/dist",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "heroku-postbuild": "npm run build"
@@ -44,9 +44,9 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.20.0",
     "axios": "^0.21.4",
-    "concurrently": "^9.0.1",
-    "@babel/plugin-proposal-private-property-in-object": "^7.20.0"
+    "concurrently": "^9.0.1"
   },
   "engines": {
     "node": ">=14.x"

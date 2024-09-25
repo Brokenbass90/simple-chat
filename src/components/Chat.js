@@ -18,20 +18,44 @@ function Chat() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.get('/api/user', { // Относительный путь
+      axios.get('/api/user', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
         setUser(res.data);
-
         initiateSocket(token); // Инициализация сокета с токеном
-
-        const socket = getSocket();
+  
+        const socket = getSocket(); // Вызов getSocket только после инициализации
         socket.connect();
-
         socket.emit('requestChatHistory');
+  
+        // Обработчики событий сокета
+        socket.on('chatHistory', (messages) => {
+          setMessages(messages);
+        });
+  
+        socket.on('chatMessage', (msg) => {
+          setMessages((prevMessages) => [...prevMessages, msg]);
+        });
+  
+        socket.on('deleteMessage', (messageId) => {
+          setMessages((prevMessages) => prevMessages.filter(msg => msg._id !== messageId));
+        });
+  
+        socket.on('errorMessage', (errorMsg) => {
+          alert(errorMsg);
+        });
+  
+        socket.on('connect_error', (err) => {
+          if (err.message === 'Authentication error') {
+            alert('Ошибка аутентификации. Пожалуйста, войдите заново.');
+            handleLogout();
+          } else {
+            console.error('Ошибка подключения:', err);
+          }
+        });
       })
       .catch((err) => {
         console.error('Ошибка при получении данных пользователя:', err);
@@ -40,50 +64,25 @@ function Chat() {
     } else {
       setShowLogin(true);
     }
-
-    // Обработчики событий сокета
-    let socket;
-    try {
-      socket = getSocket();
-      socket.on('chatHistory', (messages) => {
-        setMessages(messages);
-      });
-
-      socket.on('chatMessage', (msg) => {
-        setMessages((prevMessages) => [...prevMessages, msg]);
-      });
-
-      socket.on('deleteMessage', (messageId) => {
-        setMessages((prevMessages) => prevMessages.filter(msg => msg._id !== messageId));
-      });
-
-      socket.on('errorMessage', (errorMsg) => {
-        alert(errorMsg);
-      });
-
-      socket.on('connect_error', (err) => {
-        if (err.message === 'Authentication error') {
-          alert('Ошибка аутентификации. Пожалуйста, войдите заново.');
-          handleLogout();
-        } else {
-          console.error('Ошибка подключения:', err);
-        }
-      });
-    } catch (error) {
-      console.error(error.message);
-    }
-
+  
     return () => {
-      if (socket) {
-        socket.off('chatHistory');
-        socket.off('chatMessage');
-        socket.off('deleteMessage');
-        socket.off('errorMessage');
-        socket.off('connect_error');
-        socket.disconnect();
+      try {
+        const socket = getSocket();
+        if (socket) {
+          socket.off('chatHistory');
+          socket.off('chatMessage');
+          socket.off('deleteMessage');
+          socket.off('errorMessage');
+          socket.off('connect_error');
+          socket.disconnect();
+        }
+      } catch (error) {
+        console.error('Socket error during cleanup:', error.message);
       }
     };
   }, []);
+  
+  
 
   const handleLogin = (username, avatar) => {
     setUser({ username, avatar });

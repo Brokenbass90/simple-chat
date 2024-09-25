@@ -9,10 +9,21 @@ function RegisterModal({ onClose }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/register', { username, password });
+      await axios.post('/api/register', 
+        { 
+          username, 
+          password 
+        }, 
+        {
+          headers: {
+            'Content-Type': 'application/json', // Явно указываем тип контента
+          }
+        }
+      );
       alert('Регистрация успешна! Теперь вы можете войти.');
       onClose();
     } catch (err) {
+      console.error('Ошибка при регистрации:', err);
       setError('Ошибка при регистрации');
     }
   };
@@ -22,8 +33,18 @@ function RegisterModal({ onClose }) {
       <form onSubmit={handleRegister}>
         <h2>Регистрация</h2>
         {error && <p className="error">{error}</p>}
-        <input type="text" placeholder="Имя пользователя" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input type="password" placeholder="Пароль" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input 
+          type="text" 
+          placeholder="Имя пользователя" 
+          value={username} 
+          onChange={(e) => setUsername(e.target.value)} 
+        />
+        <input 
+          type="password" 
+          placeholder="Пароль" 
+          value={password} 
+          onChange={(e) => setPassword(e.target.value)} 
+        />
         <button type="submit">Зарегистрироваться</button>
         <button type="button" onClick={onClose}>Отмена</button>
       </form>

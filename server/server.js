@@ -158,10 +158,6 @@ app.use(express.static(path.join(__dirname, '..', 'build')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'build', 'index.html'));
 });
-// The "catchall" handler: for any request that doesn't match above, send back React's index.html file.
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'src', 'build', 'index.html'));
-});
 
 // Create HTTP server
 const server = http.createServer(app);

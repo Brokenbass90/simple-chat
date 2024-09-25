@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { initiateSocket, getSocket } from '../socket'; // Корректный импорт
+import { initiateSocket, getSocket } from '../socket'; 
 import Message from './Message';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
@@ -13,7 +13,7 @@ function Chat() {
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const [showProfile, setShowProfile] = useState(false); // Состояние для отображения профиля
+  const [showProfile, setShowProfile] = useState(false); 
 
   useEffect(() => {
     const token = localStorage.getItem('token');

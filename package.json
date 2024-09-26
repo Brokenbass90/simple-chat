@@ -17,13 +17,12 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/server.js",
     "client": "PORT=3000 react-scripts start",
     "build": "react-scripts build --output-path server/dist",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "heroku-postbuild": "npm run build --prefix src"
+    "heroku-postbuild": "npm run build" 
   },
   "eslintConfig": {
     "extends": [

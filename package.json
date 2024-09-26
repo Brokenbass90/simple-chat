@@ -22,7 +22,7 @@
     "client": "PORT=3000 react-scripts start",
     "build": "react-scripts build --output-path server/dist",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "heroku-postbuild": "npm run build" 
+    "heroku-postbuild": "npm run build"
   },
   "eslintConfig": {
     "extends": [

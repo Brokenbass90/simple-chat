@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { initiateSocket, getSocket } from '../socket'; 
-import Message from './Message';
-import LoginModal from './LoginModal';
-import RegisterModal from './RegisterModal';
-import Profile from './Profile/Profile';
+import { initiateSocket, getSocket } from '../../socket'; 
+import Message from '../Message/Message';
+import LoginModal from '../LoginModal/LoginModal';
+import RegisterModal from '../RegisterModal/RegisterModal';
+import Profile from '../Profile/Profile';
+import axios from '../axiosConfig';
 import './Chat.css';
-import axios from 'axios';
 
 function Chat() {
   const [message, setMessage] = useState('');
@@ -13,41 +13,40 @@ function Chat() {
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const [showProfile, setShowProfile] = useState(false); 
+  const [showProfile, setShowProfile] = useState(false);
 
+  // Инициализация сокета и получение истории сообщений
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.get('/api/user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      axios.get('/user', {
+        headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
         setUser(res.data);
-        initiateSocket(token); // Инициализация сокета с токеном
-  
-        const socket = getSocket(); // Вызов getSocket только после инициализации
+        initiateSocket(token);
+
+        const socket = getSocket();
         socket.connect();
         socket.emit('requestChatHistory');
-  
-        // Обработчики событий сокета
+
+        // Слушатели событий сокета
         socket.on('chatHistory', (messages) => {
           setMessages(messages);
         });
-  
+
         socket.on('chatMessage', (msg) => {
           setMessages((prevMessages) => [...prevMessages, msg]);
         });
-  
+
         socket.on('deleteMessage', (messageId) => {
           setMessages((prevMessages) => prevMessages.filter(msg => msg._id !== messageId));
         });
-  
+
         socket.on('errorMessage', (errorMsg) => {
           alert(errorMsg);
         });
-  
+
         socket.on('connect_error', (err) => {
           if (err.message === 'Authentication error') {
             alert('Ошибка аутентификации. Пожалуйста, войдите заново.');
@@ -64,11 +63,12 @@ function Chat() {
     } else {
       setShowLogin(true);
     }
-  
+
     return () => {
       try {
         const socket = getSocket();
         if (socket) {
+          // Отключение всех событий и сокета при размонтировании компонента
           socket.off('chatHistory');
           socket.off('chatMessage');
           socket.off('deleteMessage');
@@ -81,13 +81,12 @@ function Chat() {
       }
     };
   }, []);
-  
-  
 
+  // Вход пользователя
   const handleLogin = (username, avatar) => {
     setUser({ username, avatar });
     setShowLogin(false);
-  
+
     const token = localStorage.getItem('token');
     initiateSocket(token);
     const socket = getSocket();
@@ -95,6 +94,7 @@ function Chat() {
     socket.emit('requestChatHistory');
   };
 
+  // Выход пользователя
   const handleLogout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -103,29 +103,29 @@ function Chat() {
     socket.disconnect();
   };
 
+  // Отправка сообщения
   const sendMessage = (e) => {
     e.preventDefault();
     if (message.trim()) {
-      const msg = {
-        text: message,
-      };
+      const msg = { text: message };
       const socket = getSocket();
       socket.emit('chatMessage', msg);
       setMessage('');
     }
   };
 
+  // Удаление сообщения
   const deleteMessage = (messageId) => {
     const socket = getSocket();
     socket.emit('deleteMessage', messageId);
   };
 
-  // Функция для обновления профиля
+  // Обновление профиля
   const handleUpdateProfile = (updatedUser) => {
     setUser((prevUser) => ({ ...prevUser, ...updatedUser }));
   };
 
-  // Функция для удаления профиля
+  // Удаление профиля
   const handleDeleteProfile = () => {
     handleLogout();
   };
@@ -139,55 +139,75 @@ function Chat() {
         <RegisterModal onClose={() => setShowRegister(false)} />
       )}
       {user && (
-        <>
-          <div className="chat__header">
-            {user.avatar && (
-              <img src={user.avatar} alt="Avatar" className="chat__avatar" /> 
-            )}
-            <span>{user.username}</span>
-            <button onClick={() => setShowProfile(true)}>Профиль</button> 
-            <button onClick={handleLogout}>Выйти</button>
+        <div className="chat__container">
+          <div className="chat__sidebar">
+            
+            <div className="chat__participants">
+              <h3>Участники чата</h3>
+              {/* Добавьте список участников */}
+              {showProfile && (
+                <Profile
+                  user={user}
+                  onUpdate={handleUpdateProfile}
+                  onDelete={handleDeleteProfile}
+                  onClose={() => setShowProfile(false)}
+                />
+              )}
+            </div>
+            
+            <div className="chat__profile">
+              <div className='chat__profile-container'>
+                {user.avatar && (
+                  <img src={user.avatar} alt="Avatar" className="chat__avatar" />
+                )}
+                <span className="chat__username">{user.username}</span>
+                
+              </div>
+              
+              <div className='chat__profile-container space-between'>
+                <button className="chat__button" onClick={() => setShowProfile(true)}>Профиль</button> 
+                <button className="chat__button" onClick={handleLogout}>Выйти</button>
+              </div>
+                
+            </div>
           </div>
-          <div className="chat__messages">
-            {messages.map((msg) => (
-              <Message
-                key={msg._id}
-                message={msg}
-                currentUser={user.username}
-                onDelete={deleteMessage}
+          <div className="chat__main">
+            <div className="chat__messages">
+              {messages.map((msg) => (
+                <Message
+                  key={msg._id}
+                  message={msg}
+                  currentUser={user.username}
+                  onDelete={deleteMessage}
+                />
+              ))}
+            </div>
+            <form className="chat__form" onSubmit={sendMessage}>
+              <input
+                className="chat__input"
+                type="text"
+                placeholder="Введите сообщение..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
               />
-            ))}
+              <button className="chat__button chat__button--send" type="submit">
+                Отправить
+              </button>
+            </form>
           </div>
-          <form className="chat__form" onSubmit={sendMessage}>
-            <input
-              className="chat__input"
-              type="text"
-              placeholder="Введите сообщение..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <button className="chat__button" type="submit">
-              Отправить
-            </button>
-          </form>
-        </>
+        </div>
       )}
       {!user && (
         <div className="chat__auth-options">
-          <button onClick={() => setShowLogin(true)}>Войти</button>
-          <button onClick={() => setShowRegister(true)}>Регистрация</button>
+          <button className="chat__button" onClick={() => setShowLogin(true)}>Войти</button>
+          <button className="chat__button" onClick={() => setShowRegister(true)}>Регистрация</button>
         </div>
       )}
-      {showProfile && (
-        <Profile
-          user={user}
-          onUpdate={handleUpdateProfile}
-          onDelete={handleDeleteProfile}
-          onClose={() => setShowProfile(false)}
-        />
-      )}
+      
     </div>
   );
+  
+  
 }
 
 export default Chat;

@@ -1,0 +1,19 @@
+@import url('../variables/variables.css');
+
+.modal__title{
+    color: var(--color-header);
+}
+
+.register-modal{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: calc(var(--index) * 100);
+    margin: 0 auto;
+}
+
+.modal__content{
+    width: calc(var(--index) * 30);
+}
+

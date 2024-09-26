@@ -1,4 +1,4 @@
-require('dotenv').config(); // Загрузка переменных окружения
+require('dotenv').config(); 
 
 const express = require('express');
 const http = require('http');
@@ -30,14 +30,14 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Для парсинга JSON в запросах
+app.use(express.json()); 
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
-app.use('/uploads', express.static(uploadsDir)); // Обслуживание статических файлов из 'uploads'
+app.use('/uploads', express.static(uploadsDir)); 
 
 // Set up multer for file uploads (avatars)
 const storage = multer.diskStorage({
@@ -50,35 +50,27 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+
 // JWT authentication middleware
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Ожидается 'Bearer TOKEN'
+  const token = authHeader && authHeader.split(' ')[1]; 
 
-  if (token == null) return res.sendStatus(401); // Токен не предоставлен
+  if (token == null) return res.sendStatus(401);
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403); // Неверный токен
+    if (err) return res.sendStatus(403); 
     req.userId = user.id;
     next();
   });
 }
 
-// Routes
-
 // User registration
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
   try {
-    // Хешируем пароль пользователя
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Создаем нового пользователя
-    const user = new User({
-      username,
-      password: hashedPassword,
-    });
-
+    const user = new User({ username, password: hashedPassword });
     await user.save();
     res.status(201).send('User registered successfully');
   } catch (err) {
@@ -91,16 +83,11 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   try {
-    // Находим пользователя по имени пользователя
     const user = await User.findOne({ username });
-
     if (user == null) {
       return res.status(400).send('Invalid username or password');
     }
-
-    // Сравниваем предоставленный пароль с хешированным паролем
     if (await bcrypt.compare(password, user.password)) {
-      // Генерируем JWT токен
       const accessToken = jwt.sign({ id: user._id }, JWT_SECRET);
       res.json({ accessToken, username: user.username, avatar: user.avatar });
     } else {
@@ -116,10 +103,8 @@ app.post('/api/login', async (req, res) => {
 app.put('/api/profile', authenticateToken, upload.single('avatar'), async (req, res) => {
   try {
     const updates = {};
-
     if (req.body.username) updates.username = req.body.username;
     if (req.file) updates.avatar = `/uploads/${req.file.filename}`;
-
     await User.findByIdAndUpdate(req.userId, updates);
     res.send('Profile updated');
   } catch (err) {
@@ -149,6 +134,7 @@ app.get('/api/user', authenticateToken, async (req, res) => {
   }
 });
 
+
 app.use(express.static(path.join(__dirname, 'dist')));
 
 app.get('*', (req, res) => {
@@ -162,7 +148,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = socketIO(server, {
   cors: {
-    origin: '*', // Разрешаем все источники (для целей разработки). В продакшене можно ограничить.
+    origin: '*',
   },
 });
 
@@ -176,7 +162,7 @@ io.use((socket, next) => {
     if (err) return next(new Error('Authentication error'));
     const user = await User.findById(decoded.id);
     if (!user) return next(new Error('Authentication error'));
-    socket.user = user; // Сохраняем информацию о пользователе в сокете
+    socket.user = user;
     next();
   });
 });
@@ -204,7 +190,6 @@ io.on('connection', (socket) => {
         text: msg.text,
         avatar: socket.user.avatar,
       });
-
       await message.save();
       io.emit('chatMessage', {
         _id: message._id,
@@ -222,7 +207,6 @@ io.on('connection', (socket) => {
   socket.on('deleteMessage', async (messageId) => {
     try {
       const message = await Message.findById(messageId);
-
       if (message.username === socket.user.username) {
         await Message.deleteOne({ _id: messageId });
         io.emit('deleteMessage', messageId);
@@ -245,3 +229,4 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+

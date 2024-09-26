@@ -40,11 +40,11 @@ function Profile({ user, onUpdate, onDelete }) {
   
 
   return (
-    <div className="modal">
+    <div className="edit-profile">
       <form onSubmit={handleUpdate}>
         <h2>Редактирование профиля</h2>
-        <input type="text" placeholder="Имя пользователя" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input type="file" accept="image/*" onChange={(e) => setAvatar(e.target.files[0])} />
+        <input className='edit-profile__input' type="text" placeholder="Имя пользователя" value={username} onChange={(e) => setUsername(e.target.value)} />
+        <input className='edit-profile__input' type="file" accept="image/*" onChange={(e) => setAvatar(e.target.files[0])} />
         <button type="submit">Сохранить</button>
         <button type="button" onClick={handleDelete}>Удалить профиль</button>
       </form>

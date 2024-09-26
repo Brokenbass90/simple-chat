@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import './RegisterModal.css';
 
 function RegisterModal({ onClose }) {
   const [username, setUsername] = useState('');
@@ -29,25 +30,28 @@ function RegisterModal({ onClose }) {
   };
 
   return (
-    <div className="modal">
-      <form onSubmit={handleRegister}>
-        <h2>Регистрация</h2>
-        {error && <p className="error">{error}</p>}
-        <input 
-          type="text" 
-          placeholder="Имя пользователя" 
-          value={username} 
-          onChange={(e) => setUsername(e.target.value)} 
-        />
-        <input 
-          type="password" 
-          placeholder="Пароль" 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)} 
-        />
-        <button type="submit">Зарегистрироваться</button>
-        <button type="button" onClick={onClose}>Отмена</button>
-      </form>
+    <div className="register-modal">
+      <div className="modal__content">
+        <form onSubmit={handleRegister}>
+            <h2 className="modal__title">Регистрация</h2>
+            {error && <p className="error">{error}</p>}
+            <input 
+              type="text" 
+              placeholder="Имя пользователя" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)} 
+            />
+            <input 
+              type="password" 
+              placeholder="Пароль" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+            />
+            <button type="submit">Зарегистрироваться</button>
+            <button type="button" onClick={onClose}>Отмена</button>
+          </form>
+      </div>
+      
     </div>
   );
 }

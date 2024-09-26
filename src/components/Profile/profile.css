@@ -1,0 +1,35 @@
+.edit-profile{
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #2e2e3e;
+    padding: calc(var(--index) * .5);
+    border-radius: 8px;
+}
+
+.edit-profile__input{
+    width: 100%;
+    margin-bottom: calc(var(--index) * .8);
+    background-color: #2e2e3e; 
+    border: 1px solid #6a1b9a;
+    border-radius: 8px; 
+    padding: calc(var(--index) * .8) calc(var(--index) * .8); 
+    color: var(--color-text); 
+    font-size: calc(var(--index) * .7);
+    transition: all 0.3s ease; 
+    outline: none; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); 
+}
+
+.edit-profile__input:focus {
+    border-color: #8e24aa; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
+    background-color: #393950; 
+}
+
+.edit-profile__input:placeholder {
+    color: #b3b3cc; 
+    opacity: 1; 
+}

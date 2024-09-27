@@ -271,11 +271,17 @@ app.get('/api/user', authenticateToken, function _callee5(req, res) {
       }
     }
   }, null, null, [[0, 7]]);
-});
-app.use(express["static"](path.join(__dirname, 'build')));
+}); // Обслуживание статических файлов из React-приложения
+
+app.use(express["static"](path.join(__dirname, 'client/build'))); // Обработка остальных запросов и возврат index.html из React-приложения
+
 app.get('*', function (req, res) {
-  res.sendFile(path.join(__dirname, '../build', 'index.html'));
-}); // Create HTTP server
+  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+}); // app.use(express.static(path.join(__dirname, 'build')));
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../build', 'index.html'));
+// });
+// Create HTTP server
 
 var server = http.createServer(app); // Initialize Socket.io
 

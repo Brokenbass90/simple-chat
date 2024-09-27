@@ -135,11 +135,18 @@ app.get('/api/user', authenticateToken, async (req, res) => {
 });
 
 
-app.use(express.static(path.join(__dirname, 'build')));
+// Обслуживание статических файлов из React-приложения
+app.use(express.static(path.join(__dirname, 'client/build')));
 
+// Обработка остальных запросов и возврат index.html из React-приложения
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
 });
+// app.use(express.static(path.join(__dirname, 'build')));
+
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../build', 'index.html'));
+// });
 
 
 // Create HTTP server

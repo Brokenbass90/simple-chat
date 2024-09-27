@@ -29,9 +29,6 @@ var User = require('./server/models/User'); // Constants
 
 
 var PORT = process.env.PORT || 5000;
-app.listen(PORT, function () {
-  console.log("Server is running on port ".concat(PORT));
-});
 var JWT_SECRET = process.env.JWT_SECRET || '435472';
 var mongoDB = process.env.MONGODB_URI || 'mongodb://127.0.0.1/chat'; // Connect to MongoDB
 
@@ -274,12 +271,11 @@ app.get('/api/user', authenticateToken, function _callee5(req, res) {
       }
     }
   }, null, null, [[0, 7]]);
-}); // Обслуживание статических файлов из папки client/build
-
-app.use(express["static"](path.join(__dirname, 'client', 'build'))); // Все остальные запросы направляем на index.html клиентского приложения
+});
+app.use(express["static"](path.join(__dirname, '..', 'client', 'build'))); // Обработка остальных запросов и возврат index.html
 
 app.get('*', function (req, res) {
-  res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'));
 }); // app.use(express.static(path.join(__dirname, 'build')));
 // app.get('*', (req, res) => {
 //   res.sendFile(path.join(__dirname, '../build', 'index.html'));

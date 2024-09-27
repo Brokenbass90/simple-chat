@@ -12,11 +12,14 @@ const path = require('path');
 const fs = require('fs');
 
 // Import models
-const Message = require('./models/Message');
-const User = require('./models/User');
+const Message = require('./server/models/Message');
+const User = require('./server/models/User');
 
 // Constants
 const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 const JWT_SECRET = process.env.JWT_SECRET || '435472';
 const mongoDB = process.env.MONGODB_URI || 'mongodb://127.0.0.1/chat';
 
@@ -135,13 +138,14 @@ app.get('/api/user', authenticateToken, async (req, res) => {
 });
 
 
-// Обслуживание статических файлов из React-приложения
-app.use(express.static(path.join(__dirname, 'client/build')));
+// Обслуживание статических файлов из папки client/build
+app.use(express.static(path.join(__dirname, 'client', 'build')));
 
-// Обработка остальных запросов и возврат index.html из React-приложения
+// Все остальные запросы направляем на index.html клиентского приложения
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
 });
+
 // app.use(express.static(path.join(__dirname, 'build')));
 
 // app.get('*', (req, res) => {

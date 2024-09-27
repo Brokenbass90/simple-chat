@@ -66,3 +66,31 @@
     color: #b3b3cc; 
     opacity: 1; 
 }
+/* 
+------------- */
+
+.login-modal__buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: calc(var(--index) * 0.8);
+  }
+  
+  .login-modal__register-text {
+    margin-top: calc(var(--index) * 1);
+    text-align: center;
+    color: var(--color-text);
+  }
+  
+  .login-modal__register-button {
+    background: none;
+    border: none;
+    color: #6a1b9a;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: underline;
+    font-size: calc(var(--index) * 0.7);
+  }
+  
+  .login-modal__register-button:hover {
+    color: #8e24aa;
+  }

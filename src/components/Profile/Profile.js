@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios from '../axiosConfig';
+import './profile.css';
 
-function Profile({ user, onUpdate, onDelete }) {
+function Profile({ user, onUpdate, onDelete, onClose }) {
   const [username, setUsername] = useState(user.username);
   const [avatar, setAvatar] = useState(null);
+  const [error, setError] = useState('');
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -13,41 +15,66 @@ function Profile({ user, onUpdate, onDelete }) {
       formData.append('avatar', avatar);
     }
     try {
-      await axios.put('http://localhost:5000/api/profile', formData, {
+      await axios.put('/api/profile', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Добавили 'Bearer '
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
-      onUpdate({ username, avatar: avatar ? URL.createObjectURL(avatar) : user.avatar });
+      onUpdate({
+        username,
+        avatar: avatar ? URL.createObjectURL(avatar) : user.avatar,
+      });
+      onClose(); // Закрываем окно после успешного обновления
     } catch (err) {
       console.error('Ошибка при обновлении профиля:', err);
+      setError('Не удалось обновить профиль');
     }
   };
-  
+
   const handleDelete = async () => {
     try {
-      await axios.delete('http://localhost:5000/api/profile', {
+      await axios.delete('/api/profile', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`, // Добавили 'Bearer '
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
       });
       onDelete();
     } catch (err) {
       console.error('Ошибка при удалении профиля:', err);
+      setError('Не удалось удалить профиль');
     }
   };
-  
 
   return (
-    <div className="edit-profile">
-      <form onSubmit={handleUpdate}>
-        <h2>Редактирование профиля</h2>
-        <input className='edit-profile__input' type="text" placeholder="Имя пользователя" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input className='edit-profile__input' type="file" accept="image/*" onChange={(e) => setAvatar(e.target.files[0])} />
-        <button type="submit">Сохранить</button>
-        <button type="button" onClick={handleDelete}>Удалить профиль</button>
-      </form>
+    <div className="profile-modal">
+      <div className="profile-modal__overlay" onClick={onClose}></div>
+      <div className="profile-modal__content">
+        <button className="profile-modal__close" onClick={onClose}>
+          &times;
+        </button>
+        <form onSubmit={handleUpdate}>
+          <h2 className="profile-modal__title">Редактирование профиля</h2>
+          {error && <p className="profile-modal__error">{error}</p>}
+          <input
+            className="profile-modal__input"
+            type="text"
+            placeholder="Имя пользователя"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            className="profile-modal__input"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setAvatar(e.target.files[0])}
+          />
+          <div className="profile-modal__buttons">
+            <button type="submit">Сохранить</button>
+            <button type="button" onClick={handleDelete}>Удалить профиль</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

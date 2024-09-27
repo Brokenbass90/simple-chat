@@ -1,35 +1,114 @@
-.edit-profile{
-    display: flex;
-    width: 100%;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #2e2e3e;
-    padding: calc(var(--index) * .5);
-    border-radius: 8px;
+/* Импортируем переменные стилей, если они есть */
+@import url('../variables/variables.css');
+
+/* Контейнер модального окна */
+.profile-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
 }
 
-.edit-profile__input{
-    width: 100%;
-    margin-bottom: calc(var(--index) * .8);
-    background-color: #2e2e3e; 
-    border: 1px solid #6a1b9a;
-    border-radius: 8px; 
-    padding: calc(var(--index) * .8) calc(var(--index) * .8); 
-    color: var(--color-text); 
-    font-size: calc(var(--index) * .7);
-    transition: all 0.3s ease; 
-    outline: none; 
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); 
+.profile-modal__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
-.edit-profile__input:focus {
-    border-color: #8e24aa; 
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
-    background-color: #393950; 
+.profile-modal__content {
+  position: relative;
+  max-width: calc(var(--index) * 30);
+  margin: 100px auto;
+  background-color: #1c1c2b;
+  padding: calc(var(--index) * 2);
+  border-radius: 8px;
+  color: var(--color-text);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.5s ease-out forwards;
 }
 
-.edit-profile__input:placeholder {
-    color: #b3b3cc; 
-    opacity: 1; 
+/* Кнопка закрытия модального окна */
+.profile-modal__close {
+  position: absolute;
+  top: calc(var(--index) * 1);
+  right: calc(var(--index) * 1);
+  background: none;
+  border: none;
+  font-size: calc(var(--index) * 2);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.profile-modal__title {
+  margin-bottom: calc(var(--index) * 1.5);
+  color: var(--color-header);
+  text-align: center;
+}
+
+.profile-modal__error {
+  color: red;
+  margin-bottom: calc(var(--index) * 0.8);
+  text-align: center;
+}
+
+.profile-modal__input {
+  width: 100%;
+  margin-bottom: calc(var(--index) * 0.8);
+  background-color: #2e2e3e;
+  border: 1px solid #6a1b9a;
+  border-radius: 8px;
+  padding: calc(var(--index) * 0.8);
+  color: var(--color-text);
+  font-size: calc(var(--index) * 0.7);
+  outline: none;
+}
+
+.profile-modal__input:focus {
+  border-color: #8e24aa;
+  background-color: #393950;
+}
+
+.profile-modal__buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(var(--index) * 1);
+}
+
+.profile-modal__buttons button {
+  width: 48%;
+  background: linear-gradient(135deg, #6a1b9a, #8e24aa);
+  border: none;
+  border-radius: 8px;
+  padding: calc(var(--index) * 0.6);
+  color: var(--color-text);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: calc(var(--index) * 0.6);
+}
+
+.profile-modal__buttons button:hover {
+  background: linear-gradient(135deg, #8e24aa, #ab47bc);
+}
+
+.profile-modal__buttons button:active {
+  background: linear-gradient(135deg, #5a148a, #7b1fa2);
+  transform: translateY(2px);
+}
+
+/* Анимация появления модального окна */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

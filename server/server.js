@@ -135,10 +135,10 @@ app.get('/api/user', authenticateToken, async (req, res) => {
 });
 
 
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'build')));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 
 
@@ -200,6 +200,17 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.error('Ошибка при отправке сообщения:', err);
       socket.emit('errorMessage', 'Ошибка при отправке сообщения.');
+    }
+  });
+
+  // Получение списка всех пользователей
+  app.get('/api/users', authenticateToken, async (req, res) => {
+    try {
+      const users = await User.find({}, 'username avatar'); // Получаем только имя пользователя и аватар
+      res.json(users);
+    } catch (err) {
+      console.error('Ошибка при получении списка пользователей:', err);
+      res.status(500).send('Ошибка сервера');
     }
   });
 

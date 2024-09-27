@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axios from '../axiosConfig';
 import './RegisterModal.css';
 
 function RegisterModal({ onClose }) {
@@ -10,17 +10,7 @@ function RegisterModal({ onClose }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/register', 
-        { 
-          username, 
-          password 
-        }, 
-        {
-          headers: {
-            'Content-Type': 'application/json', // Явно указываем тип контента
-          }
-        }
-      );
+      await axios.post('/api/register', { username, password });
       alert('Регистрация успешна! Теперь вы можете войти.');
       onClose();
     } catch (err) {
@@ -31,27 +21,31 @@ function RegisterModal({ onClose }) {
 
   return (
     <div className="register-modal">
-      <div className="modal__content">
+      <div className="register-modal__overlay" onClick={onClose}></div>
+      <div className="register-modal__content">
         <form onSubmit={handleRegister}>
-            <h2 className="modal__title">Регистрация</h2>
-            {error && <p className="error">{error}</p>}
-            <input 
-              type="text" 
-              placeholder="Имя пользователя" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
-            />
-            <input 
-              type="password" 
-              placeholder="Пароль" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-            />
+          <h2 className="register-modal__title">Регистрация</h2>
+          {error && <p className="error">{error}</p>}
+          <input
+            type="text"
+            placeholder="Имя пользователя"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <input
+            type="password"
+            placeholder="Пароль"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <div className="register-modal__buttons">
             <button type="submit">Зарегистрироваться</button>
-            <button type="button" onClick={onClose}>Отмена</button>
-          </form>
+            <button type="button" onClick={onClose}>
+              Отмена
+            </button>
+          </div>
+        </form>
       </div>
-      
     </div>
   );
 }

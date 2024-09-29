@@ -1,10 +1,21 @@
+// client/src/socket.js
+
 import { io } from 'socket.io-client';
 
 let socket;
+
+/**
+ * Инициализирует сокет с переданным токеном.
+ * @param {string} token - JWT токен для аутентификации.
+ */
 export const initiateSocket = (token) => {
   console.log('Инициализация сокета с токеном:', token); // Лог инициализации
-  if (!socket || !socket.connected) { 
-    socket = io('http://localhost:5000', {
+
+  if (!socket || !socket.connected) {
+    // Определяем URL сокета в зависимости от окружения
+    const SOCKET_URL = process.env.NODE_ENV === 'production' ? '/' : 'http://localhost:5000';
+
+    socket = io(SOCKET_URL, {
       auth: {
         token: token,
       },
@@ -25,33 +36,12 @@ export const initiateSocket = (token) => {
   }
 };
 
-
-
-// export const initiateSocket = (token) => {
-//   if (!socket) { 
-//     socket = io('/', {
-//       auth: {
-//         token: token,
-//       },
-//       autoConnect: false,
-//     });
-
-//     socket.on('connect', () => {
-//       console.log('Подключен к сокету');
-//     });
-
-//     socket.on('disconnect', () => {
-//       console.log('Отключился от сокета');
-//     });
-//   }
-// };
-
+/**
+ * Возвращает текущий сокет.
+ * @returns {Socket | undefined} - Текущий сокет или undefined, если не инициализирован.
+ */
 export const getSocket = () => {
-  if (!socket) {
-    throw new Error('Socket not initialized');
-  }
   return socket;
 };
 
 export default socket;
-

@@ -7,15 +7,14 @@ import axios from '../axiosConfig';
 import './Chat.css';
 
 function Chat() {
-  // Состояния
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [user, setUser] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [username, setUsername] = useState(''); // Для формы входа
-  const [password, setPassword] = useState(''); // Для формы входа
-  const [error, setError] = useState(''); // Для отображения ошибок при входе
+  const [username, setUsername] = useState(''); 
+  const [password, setPassword] = useState(''); 
+  const [error, setError] = useState(''); 
 
   // Функция для настройки сокета
   function setupSocket(token) {
@@ -23,12 +22,21 @@ function Chat() {
 
     const socket = getSocket();
 
-    socket.connect();
-    socket.emit('requestChatHistory');
+    if (!socket) {
+      console.error('Socket не инициализирован');
+      return;
+    }
 
-    // Слушатели событий сокета
-    socket.on('chatHistory', (messages) => {
-      setMessages(messages);
+    if (socket.connected) {
+      socket.emit('requestChatHistory');
+    } else {
+      socket.on('connect', () => {
+        socket.emit('requestChatHistory');
+      });
+    }
+
+    socket.on('chatHistory', (msgs) => {
+      setMessages(msgs);
     });
 
     socket.on('chatMessage', (msg) => {
@@ -61,9 +69,9 @@ function Chat() {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        console.log('Данные пользователя:', res.data); // Для отладки
+        console.log('Данные пользователя:', res.data); 
         setUser(res.data);
-        // Не вызываем setupSocket здесь
+       
       })
       .catch((err) => {
         console.error('Ошибка при получении данных пользователя:', err);
@@ -76,43 +84,39 @@ function Chat() {
   // Инициализация сокета при изменении пользователя
   useEffect(() => {
     if (user) {
-      // Пользователь залогинен, инициализируем сокет
+
       const token = localStorage.getItem('token');
       if (token) {
         setupSocket(token);
       }
     } else {
-      // Пользователь разлогинен, очищаем сообщения и отключаем сокет
+
       setMessages([]);
-      try {
-        const socket = getSocket();
-        if (socket) {
-          socket.off('chatHistory');
-          socket.off('chatMessage');
-          socket.off('deleteMessage');
-          socket.off('errorMessage');
-          socket.off('connect_error');
+      const socket = getSocket();
+      if (socket) {
+        socket.off('chatHistory');
+        socket.off('chatMessage');
+        socket.off('deleteMessage');
+        socket.off('errorMessage');
+        socket.off('connect_error');
+        if (socket.connected) {
           socket.disconnect();
         }
-      } catch (error) {
-        console.error('Socket error during cleanup:', error.message);
       }
     }
 
-    // Возвращаем функцию очистки при изменении пользователя
+    // Возвращаем функцию очистки при размонтировании компонента или изменении пользователя
     return () => {
-      try {
-        const socket = getSocket();
-        if (socket) {
-          socket.off('chatHistory');
-          socket.off('chatMessage');
-          socket.off('deleteMessage');
-          socket.off('errorMessage');
-          socket.off('connect_error');
+      const socket = getSocket();
+      if (socket) {
+        socket.off('chatHistory');
+        socket.off('chatMessage');
+        socket.off('deleteMessage');
+        socket.off('errorMessage');
+        socket.off('connect_error');
+        if (socket.connected) {
           socket.disconnect();
         }
-      } catch (error) {
-        console.error('Socket error during cleanup:', error.message);
       }
     };
     // eslint-disable-next-line
@@ -129,18 +133,18 @@ function Chat() {
       setPassword('');
       setError('');
 
-      // Не вызываем setupSocket здесь
+
     } catch (err) {
       console.error('Ошибка при входе:', err);
       setError('Неверное имя пользователя или пароль');
     }
   };
 
-  // Выход пользователя
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     setUser(null);
-    // Отключение сокета произойдёт в useEffect при изменении user
+  
   };
 
   // Отправка сообщения
@@ -149,15 +153,23 @@ function Chat() {
     if (message.trim()) {
       const msg = { text: message };
       const socket = getSocket();
-      socket.emit('chatMessage', msg);
-      setMessage('');
+      if (socket && socket.connected) {
+        socket.emit('chatMessage', msg);
+        setMessage('');
+      } else {
+        console.error('Socket не подключен');
+      }
     }
   };
 
   // Удаление сообщения
   const deleteMessage = (messageId) => {
     const socket = getSocket();
-    socket.emit('deleteMessage', messageId);
+    if (socket && socket.connected) {
+      socket.emit('deleteMessage', messageId);
+    } else {
+      console.error('Socket не подключен');
+    }
   };
 
   // Обновление профиля
@@ -182,6 +194,7 @@ function Chat() {
               placeholder="Имя пользователя"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              required
             />
             <input
               className="chat__input-login"
@@ -189,6 +202,7 @@ function Chat() {
               placeholder="Пароль"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
             <div className="chat__auth-buttons">
               <button className="chat__button" type="submit">
@@ -256,6 +270,7 @@ function Chat() {
                 placeholder="Введите сообщение..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                required
               />
               <button className="chat__button chat__button--send" type="submit">
                 Отправить

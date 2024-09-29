@@ -213,7 +213,7 @@ function Chat() {
                 type="button"
                 onClick={() => setShowRegister(true)}
               > 
-                Зарегистрироваться
+                Регистрация
               </button>
             </div>
           </form>

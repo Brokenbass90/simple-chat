@@ -32,7 +32,10 @@ var PORT = process.env.PORT || 5000;
 var JWT_SECRET = process.env.JWT_SECRET || '435472';
 var mongoDB = process.env.MONGODB_URI || 'mongodb://127.0.0.1/chat'; // Connect to MongoDB
 
-mongoose.connect(mongoDB).then(function () {
+mongoose.connect(mongoDB, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(function () {
   return console.log('Successfully connected to MongoDB');
 })["catch"](function (err) {
   return console.error('MongoDB connection error:', err);
@@ -76,7 +79,7 @@ function authenticateToken(req, res, next) {
 
 
 app.post('/api/register', function _callee(req, res) {
-  var _req$body, username, password, hashedPassword, user;
+  var _req$body, username, password, existingUser, hashedPassword, user;
 
   return regeneratorRuntime.async(function _callee$(_context) {
     while (1) {
@@ -85,34 +88,50 @@ app.post('/api/register', function _callee(req, res) {
           _req$body = req.body, username = _req$body.username, password = _req$body.password;
           _context.prev = 1;
           _context.next = 4;
-          return regeneratorRuntime.awrap(bcrypt.hash(password, 10));
+          return regeneratorRuntime.awrap(User.findOne({
+            username: username
+          }));
 
         case 4:
+          existingUser = _context.sent;
+
+          if (!existingUser) {
+            _context.next = 7;
+            break;
+          }
+
+          return _context.abrupt("return", res.status(400).send('Username already exists'));
+
+        case 7:
+          _context.next = 9;
+          return regeneratorRuntime.awrap(bcrypt.hash(password, 10));
+
+        case 9:
           hashedPassword = _context.sent;
           user = new User({
             username: username,
             password: hashedPassword
           });
-          _context.next = 8;
+          _context.next = 13;
           return regeneratorRuntime.awrap(user.save());
 
-        case 8:
+        case 13:
           res.status(201).send('User registered successfully');
-          _context.next = 15;
+          _context.next = 20;
           break;
 
-        case 11:
-          _context.prev = 11;
+        case 16:
+          _context.prev = 16;
           _context.t0 = _context["catch"](1);
           console.error('Registration error:', _context.t0);
           res.status(400).send('Error during registration');
 
-        case 15:
+        case 20:
         case "end":
           return _context.stop();
       }
     }
-  }, null, null, [[1, 11]]);
+  }, null, null, [[1, 16]]);
 }); // User login
 
 app.post('/api/login', function _callee2(req, res) {
@@ -271,23 +290,28 @@ app.get('/api/user', authenticateToken, function _callee5(req, res) {
       }
     }
   }, null, null, [[0, 7]]);
-}); // Обслуживание статических файлов из React-приложения
+}); // Обслуживание статических файлов клиентского приложения в продакшн
 
-app.use(express["static"](path.join(__dirname, 'client/build'))); // Обработка остальных запросов и возврат index.html из React-приложения
+if (process.env.NODE_ENV === 'production') {
+  // Установите статическую папку
+  app.use(express["static"](path.join(__dirname, '..', 'client', 'build'))); // Любые остальные запросы возвращают React приложение
 
-app.get('*', function (req, res) {
-  res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-}); // app.use(express.static(path.join(__dirname, 'build')));
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, '../build', 'index.html'));
-// });
-// Create HTTP server
+  app.get('*', function (req, res) {
+    res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'), function (err) {
+      if (err) {
+        res.status(500).send(err);
+      }
+    });
+  });
+} // Создание HTTP сервера
 
-var server = http.createServer(app); // Initialize Socket.io
+
+var server = http.createServer(app); // Инициализация Socket.io
 
 var io = socketIO(server, {
   cors: {
-    origin: '*'
+    origin: '*' // Измените на ваш фронтенд URL в продакшн, например: 'https://your-domain.com'
+
   }
 }); // Middleware для аутентификации сокета
 
@@ -336,7 +360,7 @@ io.use(function (socket, next) {
       }
     });
   });
-}); // Socket.io connection handling
+}); // Обработка подключения Socket.io
 
 io.on('connection', function (socket) {
   console.log('Пользователь подключился:', socket.user.username); // Обработка запроса истории чата
@@ -412,7 +436,7 @@ io.on('connection', function (socket) {
     }, null, null, [[0, 7]]);
   }); // Получение списка всех пользователей
 
-  app.get('/api/users', authenticateToken, function _callee9(req, res) {
+  socket.on('getUsers', function _callee9() {
     var users;
     return regeneratorRuntime.async(function _callee9$(_context9) {
       while (1) {
@@ -424,8 +448,7 @@ io.on('connection', function (socket) {
 
           case 3:
             users = _context9.sent;
-            // Получаем только имя пользователя и аватар
-            res.json(users);
+            socket.emit('usersList', users);
             _context9.next = 11;
             break;
 
@@ -433,7 +456,7 @@ io.on('connection', function (socket) {
             _context9.prev = 7;
             _context9.t0 = _context9["catch"](0);
             console.error('Ошибка при получении списка пользователей:', _context9.t0);
-            res.status(500).send('Ошибка сервера');
+            socket.emit('errorMessage', 'Ошибка при получении списка пользователей.');
 
           case 11:
           case "end":
@@ -495,7 +518,7 @@ io.on('connection', function (socket) {
   socket.on('disconnect', function () {
     console.log('Пользователь отключился');
   });
-}); // Start the server
+}); // Запуск сервера
 
 server.listen(PORT, function () {
   console.log("Server is running on port ".concat(PORT));

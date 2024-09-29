@@ -1,13 +1,11 @@
-// client/src/App.js
 import React from 'react';
+import Chat from './components/Chat/Chat';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Hello from Realtime Chat App!</h1>
-      </header>
+    <div className="app">
+      <Chat />
     </div>
   );
 }

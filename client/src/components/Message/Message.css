@@ -1,56 +1,71 @@
 .message {
   display: flex;
   align-items: flex-end;
-  margin-bottom: calc(var(--index) * 1);
+  margin-bottom: calc(var(--index) * .6);
+  width: 100%;
 }
 
 .message--self {
-  flex-direction: row-reverse;
-  text-align: right;
+  justify-content: flex-end;
+  background-color: #6a1b9a;
+  border-radius: calc(var(--index) * 1);
 }
 
 .message--other {
-  flex-direction: row;
-  text-align: left;
+  justify-content: flex-start;
+  background-color: rgb(31, 98, 10);
+  border-radius: calc(var(--index) * 1);
 }
 
 .message__avatar {
-  width: calc(var(--index) * 2);
-  height: calc(var(--index) * 2);
+  width: calc(var(--index) * 1.8);
+  width: calc(var(--index) * 1.8);
   border-radius: 50%;
-  margin: 0 calc(var(--index) * 0.5);
+  margin: calc(var(--index) * .8);
+  object-fit: cover;
 }
 
 .message__content {
   width: 100%;
-  max-width: 100%;
-  background-color: #6a1b9a; 
-  color: #fff;
-  padding: calc(var(--index) * 0.5);
-  border-radius: calc(var(--index) * 0.5);
-}
 
-.message--other .message__content {
-  background-color: #2e7d32; 
-  color: #fff;
+  padding: 12px;
+  padding-bottom: 18px;
+  border-radius: 8px;
+  position: relative;
 }
 
 .message__username {
-  font-size:  calc(var(--index) * .8);
   font-weight: bold;
-  margin-bottom: calc(var(--index) * 0.2);
+  margin-bottom: calc(var(--index) * .3);
+  color: #fff;
 }
 
 .message__text {
-  font-size:  calc(var(--index) * .7);
-  margin: 0;
+  color: #fff;
+  word-wrap: break-word;
+  font-size: calc(var(--index) * .8);
+  line-height: calc(var(--index) * 1.2);
+}
+
+.message__timestamp {
+  position: absolute;
+  bottom: 5px;
+  right: 12px;
+  font-size: calc(var(--index) * .6);
+  color: #ccc;
 }
 
 .message__delete-button {
-  background: none;
+  background: transparent;
   border: none;
-  color: #ff1744;
-  font-size: calc(var(--index) * 1.5);
+  color: #ff4d4d;
+  font-size: 16px;
   cursor: pointer;
-  margin-left: calc(var(--index) * 0.5);
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.message__delete-button:hover {
+  color: #ff1a1a;
 }

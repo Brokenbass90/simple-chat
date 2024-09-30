@@ -1,3 +1,5 @@
+// server/server.js
+
 require('dotenv').config();
 
 const express = require('express');
@@ -26,7 +28,19 @@ mongoose.connect(mongoDB, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-  .then(() => console.log('Successfully connected to MongoDB'))
+  .then(async () => {
+    console.log('Successfully connected to MongoDB');
+    // Проверяем, есть ли админ. Если нет, делаем первого пользователя админом
+    const adminExists = await User.findOne({ admin: true });
+    if (!adminExists) {
+      const firstUser = await User.findOne();
+      if (firstUser) {
+        firstUser.admin = true;
+        await firstUser.save();
+        console.log(`Пользователь ${firstUser.username} установлен как администратор`);
+      }
+    }
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Create Express app
@@ -78,6 +92,15 @@ app.post('/api/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ username, password: hashedPassword });
     await user.save();
+    
+    // Если это первый зарегистрированный пользователь, делаем его админом
+    const adminCount = await User.countDocuments({ admin: true });
+    if (adminCount === 0) {
+      user.admin = true;
+      await user.save();
+      console.log(`Пользователь ${user.username} установлен как администратор`);
+    }
+
     res.status(201).send('User registered successfully');
   } catch (err) {
     console.error('Registration error:', err);
@@ -95,7 +118,7 @@ app.post('/api/login', async (req, res) => {
     }
     if (await bcrypt.compare(password, user.password)) {
       const accessToken = jwt.sign({ id: user._id }, JWT_SECRET);
-      res.json({ accessToken, username: user.username, avatar: user.avatar });
+      res.json({ accessToken, username: user.username, avatar: user.avatar, admin: user.admin });
     } else {
       res.status(400).send('Invalid username or password');
     }
@@ -134,18 +157,16 @@ app.delete('/api/profile', authenticateToken, async (req, res) => {
 app.get('/api/user', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-    res.json({ username: user.username, avatar: user.avatar });
+    res.json({ username: user.username, avatar: user.avatar, admin: user.admin });
   } catch (err) {
     res.status(500).send('Server error');
   }
 });
 
-// Обслуживание статических файлов клиентского приложения в продакшн
+// Serve static files for client in production
 if (process.env.NODE_ENV === 'production') {
-  // Установите статическую папку
   app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
 
-  // Любые остальные запросы возвращают React приложение
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'), function (err) {
       if (err) {
@@ -155,17 +176,19 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Создание HTTP сервера
+// Create HTTP server
 const server = http.createServer(app);
 
-// Инициализация Socket.io
+// Initialize Socket.io
 const io = socketIO(server, {
   cors: {
-    origin: '*', // Измените на ваш фронтенд URL в продакшн, например: 'https://your-domain.com'
+    origin: '*', // Replace with your frontend URL in production
+    methods: ["GET", "POST"],
+    credentials: true
   },
 });
 
-// Middleware для аутентификации сокета
+// Socket authentication middleware
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) {
@@ -180,14 +203,53 @@ io.use((socket, next) => {
   });
 });
 
-// Обработка подключения Socket.io
+// Structure to store connected users
+const connectedUsers = new Map();
+
+// Function to emit users list
+function emitUsersList() {
+  const usersList = [];
+  const userPromises = [];
+
+  connectedUsers.forEach((socketId, userId) => {
+    userPromises.push(
+      User.findById(userId, 'username avatar').then(user => {
+        if (user) {
+          usersList.push({
+            _id: user._id,
+            username: user.username,
+            avatar: user.avatar,
+          });
+        }
+      }).catch(err => {
+        console.error('Ошибка при получении пользователя:', err);
+      })
+    );
+  });
+
+  Promise.all(userPromises).then(() => {
+    io.emit('usersList', usersList);
+  });
+}
+
+// Handle Socket.io connections
 io.on('connection', (socket) => {
   console.log('Пользователь подключился:', socket.user.username);
 
-  // Обработка запроса истории чата
+  // Add user to connected users
+  connectedUsers.set(socket.user._id.toString(), socket.id);
+
+  // Emit updated users list
+  emitUsersList();
+
+  // Handle chat history request
   socket.on('requestChatHistory', async () => {
     try {
-      const messages = await Message.find().sort({ timestamp: 1 }).exec();
+      // Get all messages for general chat
+      const messages = await Message.find({ to: null })
+        .populate('from', 'username avatar')
+        .sort({ timestamp: 1 })
+        .exec();
       socket.emit('chatHistory', messages);
     } catch (err) {
       console.error('Ошибка при загрузке сообщений:', err);
@@ -195,45 +257,97 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Обработка входящих сообщений
+  // Handle incoming messages
   socket.on('chatMessage', async (msg) => {
     try {
+      const { text, to } = msg; // 'to' - null for general chat or userId for private
       const message = new Message({
-        username: socket.user.username,
-        text: msg.text,
+        from: socket.user._id,
+        to: to || null,
+        text,
         avatar: socket.user.avatar,
       });
       await message.save();
-      io.emit('chatMessage', {
-        _id: message._id,
-        text: message.text,
-        username: message.username,
-        avatar: message.avatar,
-      });
+
+      // Популяция поля 'from'
+      await message.populate('from', 'username avatar');
+
+      if (to) {
+        // Private message
+        const toSocketId = connectedUsers.get(to);
+        if (toSocketId) {
+          io.to(toSocketId).emit('chatMessage', {
+            _id: message._id,
+            from: {
+              _id: message.from._id,
+              username: message.from.username,
+              avatar: message.from.avatar,
+            },
+            to: message.to,
+            text: message.text,
+            timestamp: message.timestamp,
+          });
+        }
+        // Send message to sender
+        socket.emit('chatMessage', {
+          _id: message._id,
+          from: {
+            _id: message.from._id,
+            username: message.from.username,
+            avatar: message.from.avatar,
+          },
+          to: message.to,
+          text: message.text,
+          timestamp: message.timestamp,
+        });
+      } else {
+        // General message
+        io.emit('chatMessage', {
+          _id: message._id,
+          from: {
+            _id: message.from._id,
+            username: message.from.username,
+            avatar: message.from.avatar,
+          },
+          to: null,
+          text: message.text,
+          timestamp: message.timestamp,
+        });
+      }
     } catch (err) {
       console.error('Ошибка при отправке сообщения:', err);
       socket.emit('errorMessage', 'Ошибка при отправке сообщения.');
     }
   });
 
-  // Получение списка всех пользователей
-  socket.on('getUsers', async () => {
-    try {
-      const users = await User.find({}, 'username avatar');
-      socket.emit('usersList', users);
-    } catch (err) {
-      console.error('Ошибка при получении списка пользователей:', err);
-      socket.emit('errorMessage', 'Ошибка при получении списка пользователей.');
-    }
+  // Handle getUsers request
+  socket.on('getUsers', () => {
+    emitUsersList();
   });
 
-  // Обработка удаления сообщений
+  // Handle message deletion
   socket.on('deleteMessage', async (messageId) => {
     try {
       const message = await Message.findById(messageId);
-      if (message.username === socket.user.username) {
+      if (!message) {
+        socket.emit('errorMessage', 'Сообщение не найдено.');
+        return;
+      }
+
+      if (message.from.toString() === socket.user._id.toString()) {
         await Message.deleteOne({ _id: messageId });
-        io.emit('deleteMessage', messageId);
+
+        if (message.to) {
+          // Private message
+          const toSocketId = connectedUsers.get(message.to.toString());
+          if (toSocketId) {
+            io.to(toSocketId).emit('deleteMessage', messageId);
+          }
+          socket.emit('deleteMessage', messageId);
+        } else {
+          // General message
+          io.emit('deleteMessage', messageId);
+        }
       } else {
         socket.emit('errorMessage', 'Вы не можете удалить это сообщение.');
       }
@@ -243,13 +357,15 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Обработка отключения
+  // Handle user disconnect
   socket.on('disconnect', () => {
-    console.log('Пользователь отключился');
+    console.log('Пользователь отключился:', socket.user.username);
+    connectedUsers.delete(socket.user._id.toString());
+    emitUsersList();
   });
 });
 
-// Запуск сервера
+// Start server
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

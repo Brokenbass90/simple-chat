@@ -1,5 +1,6 @@
 "use strict";
 
+// server/server.js
 require('dotenv').config();
 
 var express = require('express');
@@ -35,8 +36,51 @@ var mongoDB = process.env.MONGODB_URI || 'mongodb://127.0.0.1/chat'; // Connect 
 mongoose.connect(mongoDB, {
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(function () {
-  return console.log('Successfully connected to MongoDB');
+}).then(function _callee() {
+  var adminExists, firstUser;
+  return regeneratorRuntime.async(function _callee$(_context) {
+    while (1) {
+      switch (_context.prev = _context.next) {
+        case 0:
+          console.log('Successfully connected to MongoDB'); // Проверяем, есть ли админ. Если нет, делаем первого пользователя админом
+
+          _context.next = 3;
+          return regeneratorRuntime.awrap(User.findOne({
+            admin: true
+          }));
+
+        case 3:
+          adminExists = _context.sent;
+
+          if (adminExists) {
+            _context.next = 13;
+            break;
+          }
+
+          _context.next = 7;
+          return regeneratorRuntime.awrap(User.findOne());
+
+        case 7:
+          firstUser = _context.sent;
+
+          if (!firstUser) {
+            _context.next = 13;
+            break;
+          }
+
+          firstUser.admin = true;
+          _context.next = 12;
+          return regeneratorRuntime.awrap(firstUser.save());
+
+        case 12:
+          console.log("\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C ".concat(firstUser.username, " \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u043A\u0430\u043A \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440"));
+
+        case 13:
+        case "end":
+          return _context.stop();
+      }
+    }
+  });
 })["catch"](function (err) {
   return console.error('MongoDB connection error:', err);
 }); // Create Express app
@@ -78,70 +122,14 @@ function authenticateToken(req, res, next) {
 } // User registration
 
 
-app.post('/api/register', function _callee(req, res) {
-  var _req$body, username, password, existingUser, hashedPassword, user;
-
-  return regeneratorRuntime.async(function _callee$(_context) {
-    while (1) {
-      switch (_context.prev = _context.next) {
-        case 0:
-          _req$body = req.body, username = _req$body.username, password = _req$body.password;
-          _context.prev = 1;
-          _context.next = 4;
-          return regeneratorRuntime.awrap(User.findOne({
-            username: username
-          }));
-
-        case 4:
-          existingUser = _context.sent;
-
-          if (!existingUser) {
-            _context.next = 7;
-            break;
-          }
-
-          return _context.abrupt("return", res.status(400).send('Username already exists'));
-
-        case 7:
-          _context.next = 9;
-          return regeneratorRuntime.awrap(bcrypt.hash(password, 10));
-
-        case 9:
-          hashedPassword = _context.sent;
-          user = new User({
-            username: username,
-            password: hashedPassword
-          });
-          _context.next = 13;
-          return regeneratorRuntime.awrap(user.save());
-
-        case 13:
-          res.status(201).send('User registered successfully');
-          _context.next = 20;
-          break;
-
-        case 16:
-          _context.prev = 16;
-          _context.t0 = _context["catch"](1);
-          console.error('Registration error:', _context.t0);
-          res.status(400).send('Error during registration');
-
-        case 20:
-        case "end":
-          return _context.stop();
-      }
-    }
-  }, null, null, [[1, 16]]);
-}); // User login
-
-app.post('/api/login', function _callee2(req, res) {
-  var _req$body2, username, password, user, accessToken;
+app.post('/api/register', function _callee2(req, res) {
+  var _req$body, username, password, existingUser, hashedPassword, user, adminCount;
 
   return regeneratorRuntime.async(function _callee2$(_context2) {
     while (1) {
       switch (_context2.prev = _context2.next) {
         case 0:
-          _req$body2 = req.body, username = _req$body2.username, password = _req$body2.password;
+          _req$body = req.body, username = _req$body.username, password = _req$body.password;
           _context2.prev = 1;
           _context2.next = 4;
           return regeneratorRuntime.awrap(User.findOne({
@@ -149,22 +137,99 @@ app.post('/api/login', function _callee2(req, res) {
           }));
 
         case 4:
-          user = _context2.sent;
+          existingUser = _context2.sent;
 
-          if (!(user == null)) {
+          if (!existingUser) {
             _context2.next = 7;
             break;
           }
 
-          return _context2.abrupt("return", res.status(400).send('Invalid username or password'));
+          return _context2.abrupt("return", res.status(400).send('Username already exists'));
 
         case 7:
           _context2.next = 9;
+          return regeneratorRuntime.awrap(bcrypt.hash(password, 10));
+
+        case 9:
+          hashedPassword = _context2.sent;
+          user = new User({
+            username: username,
+            password: hashedPassword
+          });
+          _context2.next = 13;
+          return regeneratorRuntime.awrap(user.save());
+
+        case 13:
+          _context2.next = 15;
+          return regeneratorRuntime.awrap(User.countDocuments({
+            admin: true
+          }));
+
+        case 15:
+          adminCount = _context2.sent;
+
+          if (!(adminCount === 0)) {
+            _context2.next = 21;
+            break;
+          }
+
+          user.admin = true;
+          _context2.next = 20;
+          return regeneratorRuntime.awrap(user.save());
+
+        case 20:
+          console.log("\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C ".concat(user.username, " \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u043A\u0430\u043A \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440"));
+
+        case 21:
+          res.status(201).send('User registered successfully');
+          _context2.next = 28;
+          break;
+
+        case 24:
+          _context2.prev = 24;
+          _context2.t0 = _context2["catch"](1);
+          console.error('Registration error:', _context2.t0);
+          res.status(400).send('Error during registration');
+
+        case 28:
+        case "end":
+          return _context2.stop();
+      }
+    }
+  }, null, null, [[1, 24]]);
+}); // User login
+
+app.post('/api/login', function _callee3(req, res) {
+  var _req$body2, username, password, user, accessToken;
+
+  return regeneratorRuntime.async(function _callee3$(_context3) {
+    while (1) {
+      switch (_context3.prev = _context3.next) {
+        case 0:
+          _req$body2 = req.body, username = _req$body2.username, password = _req$body2.password;
+          _context3.prev = 1;
+          _context3.next = 4;
+          return regeneratorRuntime.awrap(User.findOne({
+            username: username
+          }));
+
+        case 4:
+          user = _context3.sent;
+
+          if (!(user == null)) {
+            _context3.next = 7;
+            break;
+          }
+
+          return _context3.abrupt("return", res.status(400).send('Invalid username or password'));
+
+        case 7:
+          _context3.next = 9;
           return regeneratorRuntime.awrap(bcrypt.compare(password, user.password));
 
         case 9:
-          if (!_context2.sent) {
-            _context2.next = 14;
+          if (!_context3.sent) {
+            _context3.next = 14;
             break;
           }
 
@@ -174,128 +239,128 @@ app.post('/api/login', function _callee2(req, res) {
           res.json({
             accessToken: accessToken,
             username: user.username,
-            avatar: user.avatar
+            avatar: user.avatar,
+            admin: user.admin
           });
-          _context2.next = 15;
+          _context3.next = 15;
           break;
 
         case 14:
           res.status(400).send('Invalid username or password');
 
         case 15:
-          _context2.next = 21;
+          _context3.next = 21;
           break;
 
         case 17:
-          _context2.prev = 17;
-          _context2.t0 = _context2["catch"](1);
-          console.error('Login error:', _context2.t0);
+          _context3.prev = 17;
+          _context3.t0 = _context3["catch"](1);
+          console.error('Login error:', _context3.t0);
           res.status(500).send('Server error');
 
         case 21:
         case "end":
-          return _context2.stop();
+          return _context3.stop();
       }
     }
   }, null, null, [[1, 17]]);
 }); // Update user profile
 
-app.put('/api/profile', authenticateToken, upload.single('avatar'), function _callee3(req, res) {
+app.put('/api/profile', authenticateToken, upload.single('avatar'), function _callee4(req, res) {
   var updates;
-  return regeneratorRuntime.async(function _callee3$(_context3) {
-    while (1) {
-      switch (_context3.prev = _context3.next) {
-        case 0:
-          _context3.prev = 0;
-          updates = {};
-          if (req.body.username) updates.username = req.body.username;
-          if (req.file) updates.avatar = "/uploads/".concat(req.file.filename);
-          _context3.next = 6;
-          return regeneratorRuntime.awrap(User.findByIdAndUpdate(req.userId, updates));
-
-        case 6:
-          res.send('Profile updated');
-          _context3.next = 13;
-          break;
-
-        case 9:
-          _context3.prev = 9;
-          _context3.t0 = _context3["catch"](0);
-          console.error('Profile update error:', _context3.t0);
-          res.status(400).send('Error updating profile');
-
-        case 13:
-        case "end":
-          return _context3.stop();
-      }
-    }
-  }, null, null, [[0, 9]]);
-}); // Delete user profile
-
-app["delete"]('/api/profile', authenticateToken, function _callee4(req, res) {
   return regeneratorRuntime.async(function _callee4$(_context4) {
     while (1) {
       switch (_context4.prev = _context4.next) {
         case 0:
           _context4.prev = 0;
-          _context4.next = 3;
-          return regeneratorRuntime.awrap(User.findByIdAndDelete(req.userId));
-
-        case 3:
-          res.send('Profile deleted');
-          _context4.next = 10;
-          break;
+          updates = {};
+          if (req.body.username) updates.username = req.body.username;
+          if (req.file) updates.avatar = "/uploads/".concat(req.file.filename);
+          _context4.next = 6;
+          return regeneratorRuntime.awrap(User.findByIdAndUpdate(req.userId, updates));
 
         case 6:
-          _context4.prev = 6;
-          _context4.t0 = _context4["catch"](0);
-          console.error('Profile deletion error:', _context4.t0);
-          res.status(400).send('Error deleting profile');
+          res.send('Profile updated');
+          _context4.next = 13;
+          break;
 
-        case 10:
+        case 9:
+          _context4.prev = 9;
+          _context4.t0 = _context4["catch"](0);
+          console.error('Profile update error:', _context4.t0);
+          res.status(400).send('Error updating profile');
+
+        case 13:
         case "end":
           return _context4.stop();
       }
     }
-  }, null, null, [[0, 6]]);
-}); // Get user info
+  }, null, null, [[0, 9]]);
+}); // Delete user profile
 
-app.get('/api/user', authenticateToken, function _callee5(req, res) {
-  var user;
+app["delete"]('/api/profile', authenticateToken, function _callee5(req, res) {
   return regeneratorRuntime.async(function _callee5$(_context5) {
     while (1) {
       switch (_context5.prev = _context5.next) {
         case 0:
           _context5.prev = 0;
           _context5.next = 3;
-          return regeneratorRuntime.awrap(User.findById(req.userId));
+          return regeneratorRuntime.awrap(User.findByIdAndDelete(req.userId));
 
         case 3:
-          user = _context5.sent;
-          res.json({
-            username: user.username,
-            avatar: user.avatar
-          });
+          res.send('Profile deleted');
           _context5.next = 10;
           break;
 
-        case 7:
-          _context5.prev = 7;
+        case 6:
+          _context5.prev = 6;
           _context5.t0 = _context5["catch"](0);
-          res.status(500).send('Server error');
+          console.error('Profile deletion error:', _context5.t0);
+          res.status(400).send('Error deleting profile');
 
         case 10:
         case "end":
           return _context5.stop();
       }
     }
+  }, null, null, [[0, 6]]);
+}); // Get user info
+
+app.get('/api/user', authenticateToken, function _callee6(req, res) {
+  var user;
+  return regeneratorRuntime.async(function _callee6$(_context6) {
+    while (1) {
+      switch (_context6.prev = _context6.next) {
+        case 0:
+          _context6.prev = 0;
+          _context6.next = 3;
+          return regeneratorRuntime.awrap(User.findById(req.userId));
+
+        case 3:
+          user = _context6.sent;
+          res.json({
+            username: user.username,
+            avatar: user.avatar,
+            admin: user.admin
+          });
+          _context6.next = 10;
+          break;
+
+        case 7:
+          _context6.prev = 7;
+          _context6.t0 = _context6["catch"](0);
+          res.status(500).send('Server error');
+
+        case 10:
+        case "end":
+          return _context6.stop();
+      }
+    }
   }, null, null, [[0, 7]]);
-}); // Обслуживание статических файлов клиентского приложения в продакшн
+}); // Serve static files for client in production
 
 if (process.env.NODE_ENV === 'production') {
-  // Установите статическую папку
-  app.use(express["static"](path.join(__dirname, '..', 'client', 'build'))); // Любые остальные запросы возвращают React приложение
-
+  app.use(express["static"](path.join(__dirname, '..', 'client', 'build')));
   app.get('*', function (req, res) {
     res.sendFile(path.join(__dirname, '..', 'client', 'build', 'index.html'), function (err) {
       if (err) {
@@ -303,17 +368,19 @@ if (process.env.NODE_ENV === 'production') {
       }
     });
   });
-} // Создание HTTP сервера
+} // Create HTTP server
 
 
-var server = http.createServer(app); // Инициализация Socket.io
+var server = http.createServer(app); // Initialize Socket.io
 
 var io = socketIO(server, {
   cors: {
-    origin: '*' // Измените на ваш фронтенд URL в продакшн, например: 'https://your-domain.com'
-
+    origin: '*',
+    // Replace with your frontend URL in production
+    methods: ["GET", "POST"],
+    credentials: true
   }
-}); // Middleware для аутентификации сокета
+}); // Socket authentication middleware
 
 io.use(function (socket, next) {
   var token = socket.handshake.auth.token;
@@ -322,32 +389,32 @@ io.use(function (socket, next) {
     return next(new Error('Authentication error'));
   }
 
-  jwt.verify(token, JWT_SECRET, function _callee6(err, decoded) {
+  jwt.verify(token, JWT_SECRET, function _callee7(err, decoded) {
     var user;
-    return regeneratorRuntime.async(function _callee6$(_context6) {
+    return regeneratorRuntime.async(function _callee7$(_context7) {
       while (1) {
-        switch (_context6.prev = _context6.next) {
+        switch (_context7.prev = _context7.next) {
           case 0:
             if (!err) {
-              _context6.next = 2;
+              _context7.next = 2;
               break;
             }
 
-            return _context6.abrupt("return", next(new Error('Authentication error')));
+            return _context7.abrupt("return", next(new Error('Authentication error')));
 
           case 2:
-            _context6.next = 4;
+            _context7.next = 4;
             return regeneratorRuntime.awrap(User.findById(decoded.id));
 
           case 4:
-            user = _context6.sent;
+            user = _context7.sent;
 
             if (user) {
-              _context6.next = 7;
+              _context7.next = 7;
               break;
             }
 
-            return _context6.abrupt("return", next(new Error('Authentication error')));
+            return _context7.abrupt("return", next(new Error('Authentication error')));
 
           case 7:
             socket.user = user;
@@ -355,78 +422,69 @@ io.use(function (socket, next) {
 
           case 9:
           case "end":
-            return _context6.stop();
+            return _context7.stop();
         }
       }
     });
   });
-}); // Обработка подключения Socket.io
+}); // Structure to store connected users
+
+var connectedUsers = new Map(); // Function to emit users list
+
+function emitUsersList() {
+  var usersList = [];
+  var userPromises = [];
+  connectedUsers.forEach(function (socketId, userId) {
+    userPromises.push(User.findById(userId, 'username avatar').then(function (user) {
+      if (user) {
+        usersList.push({
+          _id: user._id,
+          username: user.username,
+          avatar: user.avatar
+        });
+      }
+    })["catch"](function (err) {
+      console.error('Ошибка при получении пользователя:', err);
+    }));
+  });
+  Promise.all(userPromises).then(function () {
+    io.emit('usersList', usersList);
+  });
+} // Handle Socket.io connections
+
 
 io.on('connection', function (socket) {
-  console.log('Пользователь подключился:', socket.user.username); // Обработка запроса истории чата
+  console.log('Пользователь подключился:', socket.user.username); // Add user to connected users
 
-  socket.on('requestChatHistory', function _callee7() {
+  connectedUsers.set(socket.user._id.toString(), socket.id); // Emit updated users list
+
+  emitUsersList(); // Handle chat history request
+
+  socket.on('requestChatHistory', function _callee8() {
     var messages;
-    return regeneratorRuntime.async(function _callee7$(_context7) {
-      while (1) {
-        switch (_context7.prev = _context7.next) {
-          case 0:
-            _context7.prev = 0;
-            _context7.next = 3;
-            return regeneratorRuntime.awrap(Message.find().sort({
-              timestamp: 1
-            }).exec());
-
-          case 3:
-            messages = _context7.sent;
-            socket.emit('chatHistory', messages);
-            _context7.next = 11;
-            break;
-
-          case 7:
-            _context7.prev = 7;
-            _context7.t0 = _context7["catch"](0);
-            console.error('Ошибка при загрузке сообщений:', _context7.t0);
-            socket.emit('errorMessage', 'Ошибка при загрузке истории чата.');
-
-          case 11:
-          case "end":
-            return _context7.stop();
-        }
-      }
-    }, null, null, [[0, 7]]);
-  }); // Обработка входящих сообщений
-
-  socket.on('chatMessage', function _callee8(msg) {
-    var message;
     return regeneratorRuntime.async(function _callee8$(_context8) {
       while (1) {
         switch (_context8.prev = _context8.next) {
           case 0:
             _context8.prev = 0;
-            message = new Message({
-              username: socket.user.username,
-              text: msg.text,
-              avatar: socket.user.avatar
-            });
-            _context8.next = 4;
-            return regeneratorRuntime.awrap(message.save());
+            _context8.next = 3;
+            return regeneratorRuntime.awrap(Message.find({
+              to: null
+            }).populate('from', 'username avatar').sort({
+              timestamp: 1
+            }).exec());
 
-          case 4:
-            io.emit('chatMessage', {
-              _id: message._id,
-              text: message.text,
-              username: message.username,
-              avatar: message.avatar
-            });
+          case 3:
+            messages = _context8.sent;
+            socket.emit('chatHistory', messages);
             _context8.next = 11;
             break;
 
           case 7:
             _context8.prev = 7;
             _context8.t0 = _context8["catch"](0);
-            console.error('Ошибка при отправке сообщения:', _context8.t0);
-            socket.emit('errorMessage', 'Ошибка при отправке сообщения.');
+            console.error('Ошибка при загрузке сообщений:', _context8.t0);
+            socket.emit('errorMessage', 'Ошибка при загрузке истории чата.');
 
           case 11:
           case "end":
@@ -434,40 +492,99 @@ io.on('connection', function (socket) {
         }
       }
     }, null, null, [[0, 7]]);
-  }); // Получение списка всех пользователей
+  }); // Handle incoming messages
 
-  socket.on('getUsers', function _callee9() {
-    var users;
+  socket.on('chatMessage', function _callee9(msg) {
+    var text, to, message, toSocketId;
     return regeneratorRuntime.async(function _callee9$(_context9) {
       while (1) {
         switch (_context9.prev = _context9.next) {
           case 0:
             _context9.prev = 0;
-            _context9.next = 3;
-            return regeneratorRuntime.awrap(User.find({}, 'username avatar'));
+            text = msg.text, to = msg.to; // 'to' - null for general chat or userId for private
 
-          case 3:
-            users = _context9.sent;
-            socket.emit('usersList', users);
-            _context9.next = 11;
-            break;
+            message = new Message({
+              from: socket.user._id,
+              to: to || null,
+              text: text,
+              avatar: socket.user.avatar
+            });
+            _context9.next = 5;
+            return regeneratorRuntime.awrap(message.save());
+
+          case 5:
+            _context9.next = 7;
+            return regeneratorRuntime.awrap(message.populate('from', 'username avatar'));
 
           case 7:
-            _context9.prev = 7;
-            _context9.t0 = _context9["catch"](0);
-            console.error('Ошибка при получении списка пользователей:', _context9.t0);
-            socket.emit('errorMessage', 'Ошибка при получении списка пользователей.');
+            if (to) {
+              // Private message
+              toSocketId = connectedUsers.get(to);
 
-          case 11:
+              if (toSocketId) {
+                io.to(toSocketId).emit('chatMessage', {
+                  _id: message._id,
+                  from: {
+                    _id: message.from._id,
+                    username: message.from.username,
+                    avatar: message.from.avatar
+                  },
+                  to: message.to,
+                  text: message.text,
+                  timestamp: message.timestamp
+                });
+              } // Send message to sender
+
+
+              socket.emit('chatMessage', {
+                _id: message._id,
+                from: {
+                  _id: message.from._id,
+                  username: message.from.username,
+                  avatar: message.from.avatar
+                },
+                to: message.to,
+                text: message.text,
+                timestamp: message.timestamp
+              });
+            } else {
+              // General message
+              io.emit('chatMessage', {
+                _id: message._id,
+                from: {
+                  _id: message.from._id,
+                  username: message.from.username,
+                  avatar: message.from.avatar
+                },
+                to: null,
+                text: message.text,
+                timestamp: message.timestamp
+              });
+            }
+
+            _context9.next = 14;
+            break;
+
+          case 10:
+            _context9.prev = 10;
+            _context9.t0 = _context9["catch"](0);
+            console.error('Ошибка при отправке сообщения:', _context9.t0);
+            socket.emit('errorMessage', 'Ошибка при отправке сообщения.');
+
+          case 14:
           case "end":
             return _context9.stop();
         }
       }
-    }, null, null, [[0, 7]]);
-  }); // Обработка удаления сообщений
+    }, null, null, [[0, 10]]);
+  }); // Handle getUsers request
+
+  socket.on('getUsers', function () {
+    emitUsersList();
+  }); // Handle message deletion
 
   socket.on('deleteMessage', function _callee10(messageId) {
-    var message;
+    var message, toSocketId;
     return regeneratorRuntime.async(function _callee10$(_context10) {
       while (1) {
         switch (_context10.prev = _context10.next) {
@@ -479,46 +596,70 @@ io.on('connection', function (socket) {
           case 3:
             message = _context10.sent;
 
-            if (!(message.username === socket.user.username)) {
-              _context10.next = 10;
+            if (message) {
+              _context10.next = 7;
               break;
             }
 
-            _context10.next = 7;
+            socket.emit('errorMessage', 'Сообщение не найдено.');
+            return _context10.abrupt("return");
+
+          case 7:
+            if (!(message.from.toString() === socket.user._id.toString())) {
+              _context10.next = 13;
+              break;
+            }
+
+            _context10.next = 10;
             return regeneratorRuntime.awrap(Message.deleteOne({
               _id: messageId
             }));
 
-          case 7:
-            io.emit('deleteMessage', messageId);
-            _context10.next = 11;
-            break;
-
           case 10:
-            socket.emit('errorMessage', 'Вы не можете удалить это сообщение.');
+            if (message.to) {
+              // Private message
+              toSocketId = connectedUsers.get(message.to.toString());
 
-          case 11:
-            _context10.next = 17;
+              if (toSocketId) {
+                io.to(toSocketId).emit('deleteMessage', messageId);
+              }
+
+              socket.emit('deleteMessage', messageId);
+            } else {
+              // General message
+              io.emit('deleteMessage', messageId);
+            }
+
+            _context10.next = 14;
             break;
 
           case 13:
-            _context10.prev = 13;
+            socket.emit('errorMessage', 'Вы не можете удалить это сообщение.');
+
+          case 14:
+            _context10.next = 20;
+            break;
+
+          case 16:
+            _context10.prev = 16;
             _context10.t0 = _context10["catch"](0);
             console.error('Ошибка при удалении сообщения:', _context10.t0);
             socket.emit('errorMessage', 'Ошибка при удалении сообщения.');
 
-          case 17:
+          case 20:
           case "end":
             return _context10.stop();
         }
       }
-    }, null, null, [[0, 13]]);
-  }); // Обработка отключения
+    }, null, null, [[0, 16]]);
+  }); // Handle user disconnect
 
   socket.on('disconnect', function () {
-    console.log('Пользователь отключился');
+    console.log('Пользователь отключился:', socket.user.username);
+    connectedUsers["delete"](socket.user._id.toString());
+    emitUsersList();
   });
-}); // Запуск сервера
+}); // Start server
 
 server.listen(PORT, function () {
   console.log("Server is running on port ".concat(PORT));

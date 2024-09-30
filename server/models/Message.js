@@ -3,9 +3,10 @@
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
-  username: String,
-  text: String,
-  avatar: String,
+  from: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  to: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // null для общего чата
+  text: { type: String, required: true },
+  avatar: { type: String, default: '' },
   timestamp: { type: Date, default: Date.now, index: true }
 });
 
